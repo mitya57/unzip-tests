@@ -1,0 +1,15 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3
+      - name: Generate ru_RU.UTF-8 locale
+        run: |-
+          sudo sed -i 's/^# \(ru_RU.UTF-8 UTF-8\)$/\1/' /etc/locale.gen
+          sudo locale-gen
+      - run: python3 -m unittest -v ./test_*.py
