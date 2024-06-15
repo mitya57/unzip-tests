@@ -38,13 +38,14 @@ class UnicodeNamesTestCases(unittest.TestCase):
 
     filename = "абвгде"
 
-    def _do_test(self, zipinfo, encoding=None):
+    def _do_test(self, zipinfo, encoding=None, locale=None):
         with tempfile.TemporaryFile(suffix=".zip") as fp:
             with zipfile.ZipFile(fp, "w") as zip_file:
                 zip_file.writestr(zipinfo, b"")
             encoding_args = ["-I", encoding] if encoding else []
             args = ["zipinfo", "-1", *encoding_args, "/dev/stdin"]
-            output = subprocess.check_output(args, stdin=fp)
+            env = {"LC_CTYPE": locale} if locale else None
+            output = subprocess.check_output(args, stdin=fp, env=env)
 
         self.assertEqual(output, f"{self.filename}\n".encode("utf-8"))
 
@@ -79,9 +80,8 @@ class UnicodeNamesTestCases(unittest.TestCase):
         """
         When create_system == 0 (MS-DOS), the filename field is treated as OEM.
 
-        We cannot set locale in the test (e.g. to ru_RU.UTF-8) because it is
-        not necessarily registered, so let's at least test passing the locale
-        manually.
+        Test that with ru_RU.UTF-8 locale, the correct encoding is used by default,
+        and that on other locales passing the encoding manually works.
         """
 
         zipinfo = custom_zip_info("cp866")(filename=self.filename)
@@ -89,15 +89,15 @@ class UnicodeNamesTestCases(unittest.TestCase):
         zipinfo.create_version = 20
 
         self._do_test(zipinfo, encoding="CP866")
+        self._do_test(zipinfo, locale="ru_RU.UTF-8")
 
     def test_windows_encoding(self):
         """
         When create_system == 11 (Windows) and create_version >= 20, the
         filename field is treated as ANSI.
 
-        We cannot set locale in the test (e.g. to ru_RU.UTF-8) because it is
-        not necessarily registered, so let's at least test passing the locale
-        manually.
+        Test that with ru_RU.UTF-8 locale, the correct encoding is used by default,
+        and that on other locales passing the encoding manually works.
         """
 
         zipinfo = custom_zip_info("cp1251")(filename=self.filename)
@@ -105,6 +105,7 @@ class UnicodeNamesTestCases(unittest.TestCase):
         zipinfo.create_version = 30
 
         self._do_test(zipinfo, encoding="CP1251")
+        self._do_test(zipinfo, locale="ru_RU.UTF-8")
 
     def test_unix_encoding(self):
         """
@@ -136,6 +137,7 @@ class UnicodeNamesTestCases(unittest.TestCase):
         self.assertIn(self.filename.encode("cp866"), buffer.getvalue())
 
         self._do_test(zipinfo, encoding="CP866")
+        self._do_test(zipinfo, locale="ru_RU.UTF-8")
 
     def test_pkzip5(self):
         """
@@ -148,6 +150,7 @@ class UnicodeNamesTestCases(unittest.TestCase):
         zipinfo.create_version = 50
 
         self._do_test(zipinfo, encoding="CP866")
+        self._do_test(zipinfo, locale="ru_RU.UTF-8")
 
 
 if __name__ == "__main__":
