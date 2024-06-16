@@ -12,12 +12,14 @@ jobs:
         run: |-
           sudo sed -i 's/^# \(ru_RU.UTF-8 UTF-8\)$/\1/' /etc/locale.gen
           sudo locale-gen
-      - name: Build and install patched unzip
+      - name: Build and install unzip and 7zip from Ubuntu Oracular
         run: |-
           sudo apt update
           sudo apt install -y devscripts
           dget -u http://azure.archive.ubuntu.com/ubuntu/pool/main/u/unzip/unzip_6.0-28ubuntu5.dsc
-          sudo apt build-dep -y ./unzip-6.0
+          dget -u http://azure.archive.ubuntu.com/ubuntu/pool/universe/7/7zip/7zip_24.06+dfsg-4.dsc
+          sudo apt build-dep -y ./unzip-6.0 ./7zip-24.06+dfsg
           (cd unzip-6.0 && dpkg-buildpackage)
-          sudo apt install -y ./unzip_6.0-28ubuntu5_amd64.deb
+          (cd 7zip-24.06+dfsg && dpkg-buildpackage)
+          sudo apt install -y ./unzip_6.0-28ubuntu5_amd64.deb ./7zip_24.06+dfsg-4_amd64.deb
       - run: python3 -m unittest -v ./test_*.py
