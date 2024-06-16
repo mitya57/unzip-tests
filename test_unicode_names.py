@@ -174,5 +174,32 @@ class SevenZipTestCase(CommonTests, unittest.TestCase):
         self.assertIn(f"Path = {self.filename}".encode("utf-8"), output.split(b"\n"))
 
 
+class UnarTestCase(CommonTests, unittest.TestCase):
+    def _do_test(self, zipinfo, encoding=None, locale=None):
+        with tempfile.TemporaryFile(suffix=".zip") as fp:
+            with zipfile.ZipFile(fp, "w") as zip_file:
+                zip_file.writestr(zipinfo, b"")
+            if encoding == "CP866":
+                encoding_args = ["-e", "cp866"]
+            elif encoding == "CP1251":
+                encoding_args = ["-e", "windows-1251"]
+            else:
+                assert encoding is None
+                encoding_args = []
+            args = ["lsar", *encoding_args, "/dev/stdin"]
+            env = {"LC_CTYPE": locale} if locale else None
+            output = subprocess.check_output(args, stdin=fp, env=env)
+
+        self.assertIn(self.filename.encode("utf-8"), output.split(b"\n"))
+
+    @unittest.expectedFailure
+    def test_windows_encoding(self):
+        return super().test_windows_encoding()
+
+    @unittest.expectedFailure
+    def test_pkzip4(self):
+        return super().test_pkzip4()
+
+
 if __name__ == "__main__":
     unittest.main()

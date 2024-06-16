@@ -15,7 +15,7 @@ jobs:
       - name: Build and install unzip and 7zip from Ubuntu Oracular
         run: |-
           sudo apt update
-          sudo apt install -y devscripts
+          sudo apt install -y devscripts unar
           dget -u http://azure.archive.ubuntu.com/ubuntu/pool/main/u/unzip/unzip_6.0-28ubuntu5.dsc
           dget -u http://azure.archive.ubuntu.com/ubuntu/pool/universe/7/7zip/7zip_24.06+dfsg-4.dsc
           sudo apt build-dep -y ./unzip-6.0 ./7zip-24.06+dfsg
