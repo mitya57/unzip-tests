@@ -30,24 +30,16 @@ def custom_zip_info(local_encoding: str, central_encoding: str | None = None):
     return CustomEncodingZipInfo
 
 
-class UnicodeNamesTestCases(unittest.TestCase):
+class CommonTests:
     """
     Tests for file names containing non-ASCII (e.g. cyrillic) symbols,
     mimicking output of various real-life ZIP archivers.
+
+    This is an abstract class which has two implementations: one testing
+    unzip and another one testing 7zip (see below).
     """
 
     filename = "абвгде"
-
-    def _do_test(self, zipinfo, encoding=None, locale=None):
-        with tempfile.TemporaryFile(suffix=".zip") as fp:
-            with zipfile.ZipFile(fp, "w") as zip_file:
-                zip_file.writestr(zipinfo, b"")
-            encoding_args = ["-I", encoding] if encoding else []
-            args = ["zipinfo", "-1", *encoding_args, "/dev/stdin"]
-            env = {"LC_CTYPE": locale} if locale else None
-            output = subprocess.check_output(args, stdin=fp, env=env)
-
-        self.assertEqual(output, f"{self.filename}\n".encode("utf-8"))
 
     def test_unicode_field(self):
         """
@@ -151,6 +143,35 @@ class UnicodeNamesTestCases(unittest.TestCase):
 
         self._do_test(zipinfo, encoding="CP866")
         self._do_test(zipinfo, locale="ru_RU.UTF-8")
+
+
+class UnzipTestCase(CommonTests, unittest.TestCase):
+    def _do_test(self, zipinfo, encoding=None, locale=None):
+        with tempfile.TemporaryFile(suffix=".zip") as fp:
+            with zipfile.ZipFile(fp, "w") as zip_file:
+                zip_file.writestr(zipinfo, b"")
+            encoding_args = ["-I", encoding] if encoding else []
+            args = ["zipinfo", "-1", *encoding_args, "/dev/stdin"]
+            env = {"LC_CTYPE": locale} if locale else None
+            output = subprocess.check_output(args, stdin=fp, env=env)
+
+        self.assertEqual(output, f"{self.filename}\n".encode("utf-8"))
+
+
+class SevenZipTestCase(CommonTests, unittest.TestCase):
+    def _do_test(self, zipinfo, encoding=None, locale=None):
+        with tempfile.TemporaryFile(suffix=".zip") as fp:
+            with zipfile.ZipFile(fp, "w") as zip_file:
+                zip_file.writestr(zipinfo, b"")
+            encoding_args = []
+            if encoding is not None:
+                assert encoding.startswith("CP")
+                encoding_args.append(f"-mcp={encoding[2:]}")
+            args = ["7z", "l", "-slt", *encoding_args, "/dev/stdin"]
+            env = {"LC_CTYPE": locale} if locale else None
+            output = subprocess.check_output(args, stdin=fp, env=env)
+
+        self.assertIn(f"Path = {self.filename}".encode("utf-8"), output.split(b"\n"))
 
 
 if __name__ == "__main__":
