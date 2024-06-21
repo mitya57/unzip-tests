@@ -201,5 +201,36 @@ class UnarTestCase(CommonTests, unittest.TestCase):
         return super().test_pkzip4()
 
 
+class BsdTarTestCase(CommonTests, unittest.TestCase):
+    def _do_test(self, zipinfo, encoding=None, locale=None):
+        if encoding is not None:
+            return  # bsdtar does not support passing encoding
+
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as zip_file:
+            zip_file.writestr(zipinfo, b"")
+        args = ["bsdtar", "-tf", "-"]
+        env = {"LC_CTYPE": locale} if locale else None
+        output = subprocess.check_output(args, input=buffer.getvalue(), env=env)
+
+        self.assertEqual(output, f"{self.filename}\n".encode("utf-8"))
+
+    @unittest.expectedFailure
+    def test_dos_encoding(self):
+        return super().test_dos_encoding()
+
+    @unittest.expectedFailure
+    def test_windows_encoding(self):
+        return super().test_windows_encoding()
+
+    @unittest.expectedFailure
+    def test_pkzip4(self):
+        return super().test_pkzip4()
+
+    @unittest.expectedFailure
+    def test_pkzip5(self):
+        return super().test_pkzip5()
+
+
 if __name__ == "__main__":
     unittest.main()
